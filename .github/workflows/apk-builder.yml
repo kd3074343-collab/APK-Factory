@@ -25,6 +25,13 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
+    - name: Create Firebase ENV
+      run: |
+        cd project
+        echo "FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}" > .env
+        echo "FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}" >> .env
+        echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+
     - name: Create Debug Key
       run: |
         cd project
@@ -33,10 +40,11 @@ jobs:
     - name: Build APK
       run: |
         cd project
-        gradle assembleDebug
+        chmod +x gradlew
+        ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: YOUR-APK
+        name: SocialsApp-Pro-APK
         path: project/app/build/outputs/apk/debug/*.apk
