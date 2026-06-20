@@ -40,6 +40,8 @@ jobs:
     - name: Build APK
       run: |
         cd project
+        APP_DIR=$(find . -name "gradlew" -type f | head -1)
+        cd "$(dirname "$APP_DIR")"
         chmod +x gradlew
         ./gradlew assembleDebug
 
