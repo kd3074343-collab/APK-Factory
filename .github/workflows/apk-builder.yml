@@ -25,9 +25,12 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
+    - name: Find Project Folder
+      run: |
+        echo "APP_DIR=$(find project -name 'settings.gradle.kts' -exec dirname {} \; | head -1)" >> $GITHUB_ENV
+
     - name: Create Firebase ENV
       run: |
-        APP_DIR=$(find project -name "settings.gradle.kts" -exec dirname {} \; | head -1)
         cd "$APP_DIR"
         echo "FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}" > .env
         echo "FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}" >> .env
@@ -35,20 +38,25 @@ jobs:
 
     - name: Create Debug Key
       run: |
-        APP_DIR=$(find project -name "settings.gradle.kts" -exec dirname {} \; | head -1)
         cd "$APP_DIR"
-        keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+        keytool -genkey \
+        -v \
+        -keystore debug.keystore \
+        -storepass android \
+        -alias androiddebugkey \
+        -keypass android \
+        -keyalg RSA \
+        -keysize 2048 \
+        -validity 10000 \
+        -dname "CN=Android Debug,O=Android,C=US"
 
     - name: Build APK
       run: |
-        APP_DIR=$(find project -name "gradlew" -exec dirname {} \; | head -1)
         cd "$APP_DIR"
-        chmod +x gradlew
-        ./gradlew assembleDebug
+        gradle assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: SocialsApp-Pro-APK
         path: "**/app/build/outputs/apk/debug/*.apk"
-  
