@@ -1,0 +1,42 @@
+name: APK Factory
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download Code
+      uses: actions/checkout@v4
+
+    - name: Find and unzip app
+      run: |
+        ZIP=$(find . -name "*.zip" | head -1)
+        unzip "$ZIP" -d project
+
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Create Debug Key
+      run: |
+        cd project
+        keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+    - name: Build APK
+      run: |
+        cd project
+        gradle assembleDebug
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: YOUR-APK
+        path: project/app/build/outputs/apk/debug/*.apk
