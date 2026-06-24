@@ -18,17 +18,19 @@ jobs:
           unzip "$ZIP" -d project
           echo "APP_DIR=$(find project -name 'settings.gradle*' -exec dirname {} \; | head -1)" >> $GITHUB_ENV
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Fix Android Project
+      - name: Fix Gradle Files
         run: |
           cd "$APP_DIR"
 
           sed -i 's/RepositoriesMode.FAIL_ON_PROJECT_REPOS/RepositoriesMode.PREFER_SETTINGS/g' settings.gradle || true
+
+          sed -i 's/gradle-9.5.1/gradle-8.7/g' gradle/wrapper/gradle-wrapper.properties || true
 
           if ! grep -q "namespace" app/build.gradle; then
             sed -i '/android {/a\    namespace "com.socials.app"' app/build.gradle
