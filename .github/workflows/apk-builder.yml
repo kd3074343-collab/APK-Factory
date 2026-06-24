@@ -1,4 +1,4 @@
-name: APK Factory
+name: Build SocialsApp APK
 
 on:
   workflow_dispatch:
@@ -8,55 +8,54 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download Code
-      uses: actions/checkout@v4
+      - name: Download Repository
+        uses: actions/checkout@v4
 
-    - name: Find and unzip app
-      run: |
-        ZIP=$(find . -name "*.zip" | head -1)
-        unzip "$ZIP" -d project
+      - name: Extract SocialsApp ZIP
+        run: |
+          ZIP=$(find . -name "*.zip" | head -1)
+          mkdir project
+          unzip "$ZIP" -d project
+          echo "APP_DIR=$(find project -name 'package.json' -exec dirname {} \; | head -1)" >> $GITHUB_ENV
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: temurin
-        java-version: 17
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+      - name: Setup Node JS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Find Project Folder
-      run: |
-        echo "APP_DIR=$(find project -name 'settings.gradle.kts' -exec dirname {} \; | head -1)" >> $GITHUB_ENV
+      - name: Install Dependencies
+        run: |
+          cd "$APP_DIR"
+          npm install
 
-    - name: Create Firebase ENV
-      run: |
-        cd "$APP_DIR"
-        echo "FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}" > .env
-        echo "FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}" >> .env
-        echo "FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}" >> .env
+      - name: Build Web App
+        run: |
+          cd "$APP_DIR"
+          npm run build
 
-    - name: Create Debug Key
-      run: |
-        cd "$APP_DIR"
-        keytool -genkey \
-        -v \
-        -keystore debug.keystore \
-        -storepass android \
-        -alias androiddebugkey \
-        -keypass android \
-        -keyalg RSA \
-        -keysize 2048 \
-        -validity 10000 \
-        -dname "CN=Android Debug,O=Android,C=US"
+      - name: Sync Capacitor Android
+        run: |
+          cd "$APP_DIR"
+          npx cap sync android
 
-    - name: Build APK
-      run: |
-        cd "$APP_DIR"
-        gradle assembleDebug
+      - name: Give Gradle Permission
+        run: |
+          cd "$APP_DIR/android"
+          chmod +x gradlew
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: SocialsApp-Pro-APK
-        path: "**/app/build/outputs/apk/debug/*.apk"
+      - name: Build Debug APK
+        run: |
+          cd "$APP_DIR/android"
+          ./gradlew assembleDebug
+
+      - name: Upload APK File
+        uses: actions/upload-artifact@v4
+        with:
+          name: SocialsApp-APK
+          path: "**/app/build/outputs/apk/debug/*.apk"
