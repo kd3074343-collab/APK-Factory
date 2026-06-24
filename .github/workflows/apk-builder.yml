@@ -11,69 +11,58 @@ jobs:
       - name: Download Repository
         uses: actions/checkout@v4
 
-      - name: Extract SocialsApp ZIP
+      - name: Extract ZIP
         run: |
           ZIP=$(find . -name "*.zip" | head -1)
-
-          if [ -z "$ZIP" ]; then
-            echo "No ZIP file found!"
-            exit 1
-          fi
-
           mkdir project
           unzip "$ZIP" -d project
+          echo "APP_DIR=$(find project -name 'package.json' -exec dirname {} \; | head -1)" >> $GITHUB_ENV
 
-          APP=$(find project -name 'package.json' -exec dirname {} \; | head -1)
-
-          if [ -z "$APP" ]; then
-            echo "package.json not found!"
-            exit 1
-          fi
-
-          echo "APP_DIR=$APP" >> $GITHUB_ENV
-
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Node JS
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install Dependencies
+      - name: Install Node Packages
         run: |
           cd "$APP_DIR"
           npm install
+          npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Build Web App
+      - name: Build Website
         run: |
           cd "$APP_DIR"
           npm run build
 
-      - name: Install Capacitor
+      - name: Fix Capacitor Config
         run: |
           cd "$APP_DIR"
-          npm install @capacitor/core @capacitor/cli @capacitor/android
+          cat > capacitor.config.json <<EOF
+          {
+            "appId": "com.socials.app",
+            "appName": "SocialsApp",
+            "webDir": "dist"
+          }
+          EOF
 
-      - name: Sync Capacitor Android
+      - name: Sync Android
         run: |
           cd "$APP_DIR"
           npx cap sync android
 
-      - name: Give Gradle Permission
+      - name: Build APK
         run: |
           cd "$APP_DIR/android"
           chmod +x gradlew
-
-      - name: Build Debug APK
-        run: |
-          cd "$APP_DIR/android"
           ./gradlew assembleDebug
 
-      - name: Upload APK File
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SocialsApp-APK
