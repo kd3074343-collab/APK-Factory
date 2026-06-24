@@ -16,54 +16,27 @@ jobs:
           ZIP=$(find . -name "*.zip" | head -1)
           mkdir project
           unzip "$ZIP" -d project
-          echo "APP_DIR=$(find project -name 'package.json' -exec dirname {} \; | head -1)" >> $GITHUB_ENV
+          echo "APP_DIR=$(find project -name 'settings.gradle*' -exec dirname {} \; | head -1)" >> $GITHUB_ENV
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install Node Packages
+      - name: Fix Android Project
         run: |
           cd "$APP_DIR"
-          npm install
-          npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Build Website
-        run: |
-          cd "$APP_DIR"
-          npm run build
+          sed -i 's/RepositoriesMode.FAIL_ON_PROJECT_REPOS/RepositoriesMode.PREFER_SETTINGS/g' settings.gradle || true
 
-      - name: Fix Capacitor Config
-        run: |
-          cd "$APP_DIR"
-          cat > capacitor.config.json <<EOF
-          {
-            "appId": "com.socials.app",
-            "appName": "SocialsApp",
-            "webDir": "dist"
-          }
-          EOF
-
-      - name: Sync Android
-        run: |
-          cd "$APP_DIR"
-          npx cap sync android
-
-      - name: Fix Gradle Repository Error
-        run: |
-          cd "$APP_DIR/android"
-          sed -i 's/RepositoriesMode.FAIL_ON_PROJECT_REPOS/RepositoriesMode.PREFER_SETTINGS/' settings.gradle
+          if ! grep -q "namespace" app/build.gradle; then
+            sed -i '/android {/a\    namespace "com.socials.app"' app/build.gradle
+          fi
 
       - name: Build APK
         run: |
-          cd "$APP_DIR/android"
+          cd "$APP_DIR"
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
