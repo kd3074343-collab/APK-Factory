@@ -39,10 +39,11 @@ jobs:
             sed -i '/android {/a\    namespace "com.socials.app"' app/build.gradle
           fi
 
-          # Force custom logo.png
+          # force both normal and round icon to logo.png
           sed -i 's/@mipmap\/ic_launcher/@drawable\/logo/g' app/src/main/AndroidManifest.xml || true
           sed -i 's/@mipmap\/ic_launcher_round/@drawable\/logo/g' app/src/main/AndroidManifest.xml || true
           sed -i 's/@drawable\/ic_launcher/@drawable\/logo/g' app/src/main/AndroidManifest.xml || true
+          sed -i 's/@drawable\/logo_round/@drawable\/logo/g' app/src/main/AndroidManifest.xml || true
 
       - name: Build APK
         run: |
