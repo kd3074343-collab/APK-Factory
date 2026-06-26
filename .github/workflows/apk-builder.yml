@@ -26,6 +26,28 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Create Debug Keystore & Print SHA1
+        run: |
+          mkdir -p ~/.android
+
+          keytool -genkeypair \
+            -alias androiddebugkey \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+          echo "========== SHA1 =========="
+
+          keytool -list -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android
+
       - name: Find Android Project
         run: |
           PROJECT_DIR=$(dirname "$(find project -name "settings.gradle.kts" | head -n 1)")
