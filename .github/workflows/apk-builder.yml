@@ -1,41 +1,48 @@
-name: Build APK From ZIP
+name: Build Online APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Extract ZIP
         run: |
-          unzip tic-tac-toe-online.zip -d project
+          mkdir project
+          unzip *.zip -d project
 
-      - name: Setup Java 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Find Android Project
         run: |
           PROJECT_DIR=$(dirname "$(find project -name settings.gradle.kts | head -n 1)")
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
 
-      - name: Grant Permission
-        run: chmod +x "$PROJECT_DIR/gradlew"
-
       - name: Build APK
         run: |
           cd "$PROJECT_DIR"
-          ./gradlew assembleDebug --stacktrace
+          gradle assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
+          name: Online-TicTacToe-APK
+          path: |
+            project/**/app/build/outputs/apk/debug/*.apk
+            project/**/*.apk
