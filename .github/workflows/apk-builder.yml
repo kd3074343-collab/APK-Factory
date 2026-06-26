@@ -38,15 +38,16 @@ jobs:
             -keystore ~/.android/debug.keystore \
             -storepass android \
             -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US"
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -noprompt
 
           echo "========== SHA1 =========="
 
           keytool -list -v \
             -keystore ~/.android/debug.keystore \
             -storepass android \
-            -alias androiddebugkey \
-            -keypass android
+            -keypass android \
+            -alias androiddebugkey | grep "SHA1"
 
       - name: Find Android Project
         run: |
@@ -57,7 +58,9 @@ jobs:
       - name: Build APK
         run: |
           cd "$PROJECT_DIR"
-          gradle --version
+
+          cp ~/.android/debug.keystore ./debug.keystore
+
           gradle assembleDebug --stacktrace --no-daemon
 
       - name: Find APK
