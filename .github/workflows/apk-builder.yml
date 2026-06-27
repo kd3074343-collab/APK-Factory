@@ -18,7 +18,8 @@ jobs:
       - name: Extract ZIP
         run: |
           mkdir project
-          unzip "*.zip" -d project
+          ZIPFILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          unzip "$ZIPFILE" -d project
 
       - name: Setup Java 17
         uses: actions/setup-java@v4
@@ -26,7 +27,7 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Create Debug Keystore & Print SHA1
+      - name: Create Debug Keystore
         run: |
           mkdir -p ~/.android
 
@@ -42,26 +43,27 @@ jobs:
             -noprompt
 
           echo "========== SHA1 =========="
-
           keytool -list -v \
             -keystore ~/.android/debug.keystore \
             -storepass android \
             -keypass android \
-            -alias androiddebugkey | grep "SHA1"
+            -alias androiddebugkey | grep SHA1
 
       - name: Find Android Project
         run: |
           PROJECT_DIR=$(dirname "$(find project -name "settings.gradle.kts" | head -n 1)")
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
-          echo "Project: $PROJECT_DIR"
+
+      - name: Copy Debug Keystore
+        run: |
+          cp ~/.android/debug.keystore "$PROJECT_DIR/debug.keystore"
+          cp ~/.android/debug.keystore "$PROJECT_DIR/custom_debug.keystore"
 
       - name: Build APK
         run: |
           cd "$PROJECT_DIR"
-
-          cp ~/.android/debug.keystore ./debug.keystore
-
-          gradle assembleDebug --stacktrace --no-daemon
+          chmod +x gradlew || true
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Find APK
         run: |
